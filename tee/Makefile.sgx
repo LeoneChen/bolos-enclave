@@ -58,7 +58,7 @@ Crypto_Library_Name := sgx_tcrypto
 
 Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -lsgx_tstdcxx -lsgx_tkey_exchange -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
+	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -lsgx_tkey_exchange -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
@@ -287,7 +287,7 @@ $(OBJDIR)/moxie:
 #
 
 .phony: build
-build: $(OBJDIR) $(OBJDIR)/platform_sgx $(OBJDIR)/moxie $(OBJDIR)/$(SECP256K1) $(OBJDIR)/$(SODIUM) $(OBJDIR)/$(UECC) $(OBJDIR)/$(CTAES) $(OBJDIR)/sha3 $(OBJDIR)/ripemd160 $(OBJDIR)/Enclave $(ARCH_EXE)
+build: $(OBJDIR) $(OBJDIR)/platform_sgx $(OBJDIR)/moxie $(OBJDIR)/$(SECP256K1) $(OBJDIR)/$(SODIUM) $(OBJDIR)/$(UECC) $(OBJDIR)/$(CTAES) $(OBJDIR)/sha3 $(OBJDIR)/ripemd160 $(OBJDIR)/Enclave $(ARCH_EXE_SIGNED)
 
 Enclave/BolosSGX_t.c: Enclave/BolosSGX.edl
 	cd Enclave && $(SGX_EDGER8R) --trusted BolosSGX.edl --search-path $(SGX_SDK)/include

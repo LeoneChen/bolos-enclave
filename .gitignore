@@ -16,3 +16,4 @@ host/py/build
 host/py/dist
 host/py/.eggs
 
+ghidra

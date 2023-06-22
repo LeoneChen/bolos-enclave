@@ -24,7 +24,7 @@
 #include "moxie_swi_common.h"
 
 #include "sgx_pse.h"
-#include "sgx_tae_service.h"
+// #include "sgx_tae_service.h"
 
 /*
 * bls_time_supported
@@ -49,6 +49,7 @@ void moxie_bls_time_supported(struct machine *mach) {
 * int
 */
 void moxie_bls_time_delta(struct machine *mach) {
+#if 0
     uint32_t status = 0;
     uint8_t *referenceOut;
     uint32_t referenceOutLength = mach->cpu.regs[MOXIE_R1];
@@ -91,6 +92,7 @@ void moxie_bls_time_delta(struct machine *mach) {
 
 end:
     mach->cpu.regs[MOXIE_R0] = status;
+#endif
 }
 
 /*
@@ -101,6 +103,8 @@ end:
 * int
 */
 void moxie_bls_time(struct machine *mach) {
+#if 0
     // TODO : go through a proxy, report untrusted
     mach->cpu.regs[MOXIE_R0] = 0;
+#endif
 }

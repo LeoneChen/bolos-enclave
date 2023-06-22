@@ -18,13 +18,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "sgx_tae_service.h"
+// #include "sgx_tae_service.h"
 
 static bool pse_session_opened = false;
 
 #define MAX_BUSY_RETRY 2
 
 int sgx_open_pse() {
+    return 0;
+#if 0
     int ret;
     int busy_retry = MAX_BUSY_RETRY;
     if (pse_session_opened) {
@@ -38,9 +40,12 @@ int sgx_open_pse() {
         return 1;
     }
     return 0;
+#endif
 }
 
 int sgx_close_pse() {
+    return 1;
+#if 0
     int ret;
     if (!pse_session_opened) {
         return 1;
@@ -51,6 +56,7 @@ int sgx_close_pse() {
         return 1;
     }
     return 0;
+#endif
 }
 
 void sgx_reset_pse() {
