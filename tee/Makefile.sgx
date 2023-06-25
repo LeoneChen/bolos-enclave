@@ -56,13 +56,12 @@ else
 endif
 Crypto_Library_Name := sgx_tcrypto
 
-Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
-	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -lsgx_tstdcxx -lsgx_tkey_exchange -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
-	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
-	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
-	-Wl,--defsym,__ImageBase=0 \
-	-Wl,--version-script=Enclave/Enclave.lds
+Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) \
+	-Wl,--whole-archive -lSGXSanRTEnclave -l$(Trts_Library_Name) -Wl,--no-whole-archive \
+	-Wl,--start-group -lsgx_tkey_exchange -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
+	-Wl,-Bsymbolic \
+	-Wl,-eenclave_entry -Wl,--export-dynamic  \
+	-Wl,--defsym,__ImageBase=0
 
 Enclave_Name := BolosSGX.so
 Signed_Enclave_Name := BolosSGX_signed.so
@@ -88,8 +87,63 @@ CFLAGS += -DBOLOS_MAJOR_VERSION=1 -DBOLOS_MINOR_VERSION=0 -DBOLOS_PATCH_VERSION=
 CFLAGS += -DBOLOS_SHARED_MEMORY_SIZE=2048
 
 CFLAGS += -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/stlport -Iplatform_sgx -IEnclave -I.
-CFLAGS += $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector
+CFLAGS += $(SGX_COMMON_CFLAGS) -fvisibility=hidden -fpie -fstack-protector
 CFLAGS += -DSGX
+
+ifeq ($(KAFL_FUZZER), 1)
+CFLAGS += \
+	-fno-discard-value-names\
+	-flegacy-pass-manager \
+	-Xclang -load -Xclang $(SGX_SDK)/lib64/libSGXSanPass.so
+HOST_CFLAGS = \
+	$(SGX_COMMON_CFLAGS) \
+	-fPIC \
+	-I$(SGX_SDK)/include \
+	-IEnclave \
+	-I../host/dylib_sgx/
+HOST_Link_Flags = \
+	$(SGX_COMMON_CFLAGS) \
+	-L$(SGX_LIBRARY_PATH) -lsgx_urts_sim -lsgx_uae_service_sim -lsgx_ukey_exchange -lpthread \
+	-ldl \
+	-Wl,-rpath=$(SGX_LIBRARY_PATH) \
+	-Wl,-whole-archive -lSGXSanRTApp -Wl,-no-whole-archive \
+	-lSGXFuzzerRT \
+	-lcrypto \
+	-lboost_program_options \
+	-rdynamic \
+	-lnyx_agent
+Enclave_Link_Flags += -shared
+else
+CFLAGS += \
+	-fno-discard-value-names\
+	-flegacy-pass-manager \
+	-Xclang -load -Xclang $(SGX_SDK)/lib64/libSGXSanPass.so \
+	-fsanitize-coverage=inline-8bit-counters,bb,no-prune,pc-table,trace-cmp \
+	-fprofile-instr-generate \
+	-fcoverage-mapping
+HOST_CFLAGS = \
+	$(SGX_COMMON_CFLAGS) \
+	-fPIC \
+	-I$(SGX_SDK)/include \
+	-IEnclave \
+	-I../host/dylib_sgx/ \
+	-fsanitize-coverage=inline-8bit-counters,bb,no-prune,pc-table,trace-cmp \
+	-fprofile-instr-generate \
+	-fcoverage-mapping
+Enclave_Link_Flags += -shared -fuse-ld=${LD} -fprofile-instr-generate
+HOST_Link_Flags = \
+	$(SGX_COMMON_CFLAGS) \
+	-L$(SGX_LIBRARY_PATH) -lsgx_urts_sim -lsgx_uae_service_sim -lsgx_ukey_exchange -lpthread \
+	-ldl \
+	-Wl,-rpath=$(SGX_LIBRARY_PATH) \
+	-Wl,-whole-archive -lSGXSanRTApp -Wl,-no-whole-archive \
+	-lSGXFuzzerRT \
+	-lcrypto \
+	-lboost_program_options \
+	-rdynamic \
+	-fuse-ld=${LD} \
+	-fcoverage-mapping
+endif
 
 OBJDIR := obj-sgx
 MKDIR := mkdir -p
@@ -287,13 +341,27 @@ $(OBJDIR)/moxie:
 #
 
 .phony: build
-build: $(OBJDIR) $(OBJDIR)/platform_sgx $(OBJDIR)/moxie $(OBJDIR)/$(SECP256K1) $(OBJDIR)/$(SODIUM) $(OBJDIR)/$(UECC) $(OBJDIR)/$(CTAES) $(OBJDIR)/sha3 $(OBJDIR)/ripemd160 $(OBJDIR)/Enclave $(ARCH_EXE)
+build: $(OBJDIR) $(OBJDIR)/platform_sgx $(OBJDIR)/moxie $(OBJDIR)/$(SECP256K1) $(OBJDIR)/$(SODIUM) $(OBJDIR)/$(UECC) $(OBJDIR)/$(CTAES) $(OBJDIR)/sha3 $(OBJDIR)/ripemd160 $(OBJDIR)/Enclave $(ARCH_EXE) $(OBJDIR)/FuzzBolosEnclave
+
+Enclave/BolosSGX_u.c: Enclave/BolosSGX.edl
+	cd Enclave && $(SGX_EDGER8R) --untrusted BolosSGX.edl --search-path $(SGX_SDK)/include --dump-parse ../Enclave.edl.json
+
+$(OBJDIR)/BolosSGX_u.o: Enclave/BolosSGX_u.c
+	$(CC) $(HOST_CFLAGS) -c $< -o $@ \
+	-flegacy-pass-manager \
+	-Xclang -load -Xclang $(SGX_SDK)/lib64/libSGXFuzzerPass.so 
+
+$(OBJDIR)/bolos_enclave.o: ../host/dylib_sgx/bolos_enclave.c Enclave/BolosSGX_u.c
+	$(CC) $(HOST_CFLAGS) -c $< -o $@
+
+$(OBJDIR)/FuzzBolosEnclave: $(OBJDIR)/bolos_enclave.o $(OBJDIR)/BolosSGX_u.o
+	$(CXX) $^ -o $@ $(HOST_Link_Flags)
 
 Enclave/BolosSGX_t.c: Enclave/BolosSGX.edl
 	cd Enclave && $(SGX_EDGER8R) --trusted BolosSGX.edl --search-path $(SGX_SDK)/include
 
 $(ARCH_EXE): $(ARCH_OBJS)
-	$(CC) $^ -o $@ $(Enclave_Link_Flags)
+	$(CXX) $^ -o $@ $(Enclave_Link_Flags)
 
 $(ARCH_EXE_SIGNED): $(ARCH_EXE)
 	@$(SGX_ENCLAVE_SIGNER) sign -key $(KEY_PATH) -enclave $(ARCH_EXE) -out $@ -config $(Enclave_Config_File)
