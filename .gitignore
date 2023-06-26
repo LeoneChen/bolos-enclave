@@ -16,3 +16,8 @@ host/py/build
 host/py/dist
 host/py/.eggs
 
+Enclave.edl.json
+app
+workdir*
+*.cpio.gz
+InstrumentStatistics.json

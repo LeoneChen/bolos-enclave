@@ -16,6 +16,7 @@
 ********************************************************************************/
 
 enclave {
+    from "SGXSanRTEnclave.edl" import *;
     from "sgx_tkey_exchange.edl" import *;
     include "sgx_key_exchange.h"
 

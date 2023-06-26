@@ -24,7 +24,7 @@
 #include "moxie_swi_common.h"
 
 #include "sgx_pse.h"
-#include "sgx_tae_service.h"
+// #include "sgx_tae_service.h"
 
 /*
 * bls_antireplay_supported
@@ -47,6 +47,7 @@ void moxie_bls_antireplay_supported(struct machine *mach) {
 * int
 */
 void moxie_bls_antireplay_create(struct machine *mach) {
+#if 0
     uint32_t status = 0;
     uint8_t *referenceOut;
     uint32_t referenceLength = mach->cpu.regs[MOXIE_R1];
@@ -76,6 +77,7 @@ void moxie_bls_antireplay_create(struct machine *mach) {
     status = sizeof(sgx_mc_uuid_t);
 end:
     mach->cpu.regs[MOXIE_R0] = status;
+#endif
 }
 
 /*
@@ -87,6 +89,7 @@ end:
 * int
 */
 void moxie_bls_antireplay_query(struct machine *mach) {
+#if 0
     uint32_t status = 0;
     uint8_t *reference;
     uint32_t referenceLength = mach->cpu.regs[MOXIE_R1];
@@ -120,6 +123,7 @@ void moxie_bls_antireplay_query(struct machine *mach) {
     status = 1;
 end:
     mach->cpu.regs[MOXIE_R0] = status;
+#endif
 }
 
 /*
@@ -130,6 +134,7 @@ end:
 * int
 */
 void moxie_bls_antireplay_increase(struct machine *mach) {
+#if 0
     uint32_t status = 0;
     uint8_t *reference;
     uint32_t referenceLength = mach->cpu.regs[MOXIE_R1];
@@ -159,6 +164,7 @@ void moxie_bls_antireplay_increase(struct machine *mach) {
     status = 1;
 end:
     mach->cpu.regs[MOXIE_R0] = status;
+#endif
 }
 
 /*
@@ -169,6 +175,7 @@ end:
 * int
 */
 void moxie_bls_antireplay_delete(struct machine *mach) {
+#if 0
     uint32_t status = 0;
     uint8_t *reference;
     uint32_t referenceLength = mach->cpu.regs[MOXIE_R1];
@@ -197,4 +204,5 @@ void moxie_bls_antireplay_delete(struct machine *mach) {
     status = 1;
 end:
     mach->cpu.regs[MOXIE_R0] = status;
+#endif
 }

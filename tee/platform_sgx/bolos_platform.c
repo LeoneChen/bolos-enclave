@@ -1,3 +1,11 @@
+#if defined(__cplusplus)
+extern "C"{
+#endif
+void SGXSanLogEnter(const char *str);
+#if defined(__cplusplus)
+}
+#endif
+#define LogEnter SGXSanLogEnter
 /*******************************************************************************
 *   BOLOS Enclave
 *   (c) 2017 Ledger
@@ -81,9 +89,11 @@ void public_key_to_intel(const unsigned char *x, const unsigned char *y,
 }
 
 sgx_status_t initRA(int openPSESession, sgx_ra_context_t *ra_context) {
+    LogEnter(__func__);
     sgx_status_t ret;
     sgx_ec256_public_t publicKey;
     public_key_to_intel(SP_PUBLIC_KEY, SP_PUBLIC_KEY + 32, &publicKey);
+#if 0
     if (openPSESession) {
         int busy_retry_times = 2;
         do {
@@ -93,15 +103,19 @@ sgx_status_t initRA(int openPSESession, sgx_ra_context_t *ra_context) {
             return ret;
         }
     }
+#endif
     ret = sgx_ra_init(&publicKey, openPSESession, ra_context);
+#if 0
     if (openPSESession) {
         sgx_close_pse_session();
     }
+#endif
     return ret;
 }
 
 uint32_t getAttestationKeyRA(sgx_ra_context_t ra_context, int keyIndex,
                              uint8_t *response, uint32_t response_size) {
+    LogEnter(__func__);
     bolos_persistent_context_t bolosPersistentContext;
     sgx_ra_key_128_t key128_1;
     uint8_t *keyPointer;
@@ -171,6 +185,7 @@ error:
 
 uint32_t setPersonalizationKeyRA(sgx_ra_context_t ra_context, uint8_t *data,
                                  uint32_t data_size) {
+    LogEnter(__func__);
     sgx_ra_key_128_t key128_1;
     uint8_t sealingKey[crypto_secretbox_KEYBYTES];
     uint32_t status = 0;
@@ -215,10 +230,12 @@ error:
 }
 
 sgx_status_t closeRA(sgx_ra_context_t ra_context) {
+    LogEnter(__func__);
     return sgx_ra_close(ra_context);
 }
 
 uint32_t createPersistentContext(uint8_t *response, uint32_t response_size) {
+    LogEnter(__func__);
     uint32_t result;
     setExceptionHandler();
     persistentContextSet = false;
@@ -236,6 +253,7 @@ uint32_t createPersistentContext(uint8_t *response, uint32_t response_size) {
 }
 
 uint32_t setPersistentContext(uint8_t *context, uint32_t context_size) {
+    LogEnter(__func__);
     sgx_status_t status;
     uint32_t plainLength = 0;
     uint32_t contextSize = sizeof(bolos_persistent_context_t);
@@ -263,6 +281,7 @@ uint32_t setPersistentContext(uint8_t *context, uint32_t context_size) {
 }
 
 uint32_t getPersistentContext(uint8_t *context, uint32_t context_size) {
+    LogEnter(__func__);
     sgx_status_t status;
     sgx_attributes_t defaultAttributes = {0xfffffffffffffff3L, 0};
     uint8_t *tmp;
@@ -289,15 +308,18 @@ uint32_t getPersistentContext(uint8_t *context, uint32_t context_size) {
 }
 
 uint32_t isPersistentContextDirty() {
+    LogEnter(__func__);
     return (persistentContextDirty ? 1 : 0);
 }
 
 void clearPersistentContextDirty() {
+    LogEnter(__func__);
     persistentContextDirty = false;
 }
 
 uint32_t exchange(uint8_t *command, uint32_t command_size, uint8_t *response,
                   uint32_t response_size) {
+    LogEnter(__func__);
     bolos_exec_status_t status;
     uint32_t outLength;
     sgx_context_t sgxContext;
